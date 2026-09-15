@@ -1,0 +1,305 @@
+{
+  "info": {
+    "name": "FixMate API",
+    "description": "Home Service Booking & Management System - Java + Spring Boot + PostgreSQL + JWT",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "customerToken", "value": "" },
+    { "key": "providerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "serviceId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "providerId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nimal Perera\",\n  \"email\": \"nimal@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"0771234567\",\n  \"role\": \"CUSTOMER\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) { pm.collectionVariables.set('customerToken', pm.response.json().token); }"
+            ]}
+          }]
+        },
+        {
+          "name": "Register Provider",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kamal Electricals\",\n  \"email\": \"kamal@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"0777654321\",\n  \"role\": \"PROVIDER\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) { pm.collectionVariables.set('providerToken', pm.response.json().token); pm.collectionVariables.set('providerId', pm.response.json().userId); }"
+            ]}
+          }]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@fixmate.com\",\n  \"password\": \"Admin@123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 200) { pm.collectionVariables.set('adminToken', pm.response.json().token); }"
+            ]}
+          }]
+        },
+        {
+          "name": "Login Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nimal@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 200) { pm.collectionVariables.set('customerToken', pm.response.json().token); }"
+            ]}
+          }]
+        },
+        {
+          "name": "Login Provider",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"kamal@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 200) { pm.collectionVariables.set('providerToken', pm.response.json().token); pm.collectionVariables.set('providerId', pm.response.json().userId); }"
+            ]}
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Pending Providers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/admin/users?role=PROVIDER"
+          }
+        },
+        {
+          "name": "Approve Provider",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/admin/providers/{{providerId}}/approve"
+          }
+        },
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/admin/dashboard"
+          }
+        },
+        {
+          "name": "All Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/admin/bookings"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Create Service (Provider)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{providerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/services",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Home Wiring Repair\",\n  \"description\": \"Fix faulty wiring and switches\",\n  \"category\": \"Electrician\",\n  \"price\": 3500.00\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) { pm.collectionVariables.set('serviceId', pm.response.json().id); }"
+            ]}
+          }]
+        },
+        {
+          "name": "Browse Services (Public)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/services" }
+        },
+        {
+          "name": "Browse Services by Category",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/services?category=Electrician" }
+        },
+        {
+          "name": "Get My Services (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{providerToken}}" }],
+            "url": "{{baseUrl}}/api/provider/services"
+          }
+        },
+        {
+          "name": "Update Service (Provider)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{providerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/services/{{serviceId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Home Wiring Repair (Updated)\",\n  \"description\": \"Fix faulty wiring, switches and sockets\",\n  \"category\": \"Electrician\",\n  \"price\": 4000.00\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": {{serviceId}},\n  \"bookingDate\": \"2026-09-20\",\n  \"bookingTime\": \"14:30:00\",\n  \"address\": \"No 12, Galle Road, Colombo\",\n  \"notes\": \"Please bring extra wire\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "if (pm.response.code === 201) { pm.collectionVariables.set('bookingId', pm.response.json().id); }"
+            ]}
+          }]
+        },
+        {
+          "name": "My Bookings (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+            "url": "{{baseUrl}}/api/bookings/my"
+          }
+        },
+        {
+          "name": "Received Bookings (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{providerToken}}" }],
+            "url": "{{baseUrl}}/api/bookings/provider"
+          }
+        },
+        {
+          "name": "Accept Booking (Provider)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{providerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACCEPTED\"\n}" }
+          }
+        },
+        {
+          "name": "Complete Booking (Provider)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{providerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"COMPLETED\"\n}" }
+          }
+        },
+        {
+          "name": "Cancel Booking (Customer)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Create Review (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": {{bookingId}},\n  \"rating\": 5,\n  \"comment\": \"Excellent and punctual service!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Provider Reviews (Public)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/providers/{{providerId}}/reviews" }
+        }
+      ]
+    }
+  ]
+}
