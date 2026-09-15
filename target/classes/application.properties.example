@@ -1,0 +1,24 @@
+# ===================== Server =====================
+server.port=8081
+
+# ===================== PostgreSQL =====================
+spring.datasource.url=jdbc:postgresql://localhost:5432/fixmate_db
+spring.datasource.username=postgres
+spring.datasource.password=ABC@123
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# ===================== JPA / Hibernate =====================
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.open-in-view=false
+
+# ===================== JWT =====================
+# 256-bit+ secret key (Base64 encoded) - CHANGE THIS IN PRODUCTION
+app.jwt.secret=ZmluTWF0ZVNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbk11c3RCZTI1NkJpdHNPckxvbmdlcg==
+app.jwt.expiration-ms=86400000
+
+# ===================== Logging =====================
+logging.level.org.springframework.security=INFO
+logging.level.com.fixmate=DEBUG
