@@ -4,7 +4,7 @@ server.port=8081
 # ===================== PostgreSQL =====================
 spring.datasource.url=jdbc:postgresql://localhost:5432/fixmate_db
 spring.datasource.username=postgres
-spring.datasource.password=ABC@123
+spring.datasource.password=your-db-password
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # ===================== JPA / Hibernate =====================
@@ -16,7 +16,7 @@ spring.jpa.open-in-view=false
 
 # ===================== JWT =====================
 # 256-bit+ secret key (Base64 encoded) - CHANGE THIS IN PRODUCTION
-app.jwt.secret=ZmluTWF0ZVNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbk11c3RCZTI1NkJpdHNPckxvbmdlcg==
+app.jwt.secret=your-base64-secret
 app.jwt.expiration-ms=86400000
 
 # ===================== Logging =====================
