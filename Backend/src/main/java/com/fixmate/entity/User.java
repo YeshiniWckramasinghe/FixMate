@@ -2,10 +2,8 @@ package com.fixmate.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -13,8 +11,6 @@ import java.time.LocalDateTime;
 @Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class User {
 
     @Id
@@ -51,4 +47,26 @@ public class User {
     @Builder.Default
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // Required by JPA. Defaults are repeated here because @Builder.Default
+    // moves the field initializers out of the fields.
+    public User() {
+        this.approved = false;
+        this.enabled = true;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Used by the Lombok builder. Parameter order must match the field order above.
+    public User(Long id, String name, String email, String password, String phone,
+                Role role, boolean approved, boolean enabled, LocalDateTime createdAt) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.phone = phone;
+        this.role = role;
+        this.approved = approved;
+        this.enabled = enabled;
+        this.createdAt = createdAt;
+    }
 }
