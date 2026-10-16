@@ -7,18 +7,21 @@ import com.fixmate.dto.UserResponse;
 import com.fixmate.entity.Role;
 import com.fixmate.service.AdminService;
 import com.fixmate.service.BookingService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-@RequiredArgsConstructor
 public class AdminController {
 
     private final AdminService adminService;
     private final BookingService bookingService;
+
+    public AdminController(AdminService adminService, BookingService bookingService) {
+        this.adminService = adminService;
+        this.bookingService = bookingService;
+    }
 
     @GetMapping("/users")
     public List<UserResponse> getAllUsers(@RequestParam(required = false) Role role) {

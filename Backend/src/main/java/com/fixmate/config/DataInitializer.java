@@ -3,7 +3,6 @@ package com.fixmate.config;
 import com.fixmate.entity.Role;
 import com.fixmate.entity.User;
 import com.fixmate.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,11 +11,15 @@ import org.springframework.stereotype.Component;
 // Seeds a default Admin account on first startup since Admin accounts cannot self-register.
 // Change these credentials immediately after first login in a real deployment.
 @Component
-@RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Value("${app.admin.email:admin@fixmate.com}")
     private String adminEmail;

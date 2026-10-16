@@ -7,7 +7,6 @@ import com.fixmate.entity.User;
 import com.fixmate.security.AuthUtil;
 import com.fixmate.service.BookingService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +15,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
-@RequiredArgsConstructor
 public class BookingController {
 
     private final BookingService bookingService;
     private final AuthUtil authUtil;
+
+    public BookingController(BookingService bookingService, AuthUtil authUtil) {
+        this.bookingService = bookingService;
+        this.authUtil = authUtil;
+    }
 
     // Customer only - create a booking
     @PostMapping

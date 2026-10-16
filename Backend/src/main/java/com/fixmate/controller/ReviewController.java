@@ -6,7 +6,6 @@ import com.fixmate.entity.User;
 import com.fixmate.security.AuthUtil;
 import com.fixmate.service.ReviewService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +13,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 public class ReviewController {
 
     private final ReviewService reviewService;
     private final AuthUtil authUtil;
+
+    public ReviewController(ReviewService reviewService, AuthUtil authUtil) {
+        this.reviewService = reviewService;
+        this.authUtil = authUtil;
+    }
 
     // Customer only - review a completed booking
     @PostMapping("/api/reviews")

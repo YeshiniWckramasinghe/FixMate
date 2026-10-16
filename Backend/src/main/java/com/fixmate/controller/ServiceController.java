@@ -6,7 +6,6 @@ import com.fixmate.entity.User;
 import com.fixmate.security.AuthUtil;
 import com.fixmate.service.ServiceManagementService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +13,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 public class ServiceController {
 
     private final ServiceManagementService serviceManagementService;
     private final AuthUtil authUtil;
+
+    public ServiceController(ServiceManagementService serviceManagementService, AuthUtil authUtil) {
+        this.serviceManagementService = serviceManagementService;
+        this.authUtil = authUtil;
+    }
 
     // Public - browse all active services
     @GetMapping("/api/services")
