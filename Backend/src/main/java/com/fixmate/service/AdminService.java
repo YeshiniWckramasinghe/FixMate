@@ -11,14 +11,12 @@ import com.fixmate.repository.BookingRepository;
 import com.fixmate.repository.ReviewRepository;
 import com.fixmate.repository.ServiceRepository;
 import com.fixmate.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminService {
 
@@ -26,6 +24,16 @@ public class AdminService {
     private final ServiceRepository serviceRepository;
     private final BookingRepository bookingRepository;
     private final ReviewRepository reviewRepository;
+
+    public AdminService(UserRepository userRepository,
+                        ServiceRepository serviceRepository,
+                        BookingRepository bookingRepository,
+                        ReviewRepository reviewRepository) {
+        this.userRepository = userRepository;
+        this.serviceRepository = serviceRepository;
+        this.bookingRepository = bookingRepository;
+        this.reviewRepository = reviewRepository;
+    }
 
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()

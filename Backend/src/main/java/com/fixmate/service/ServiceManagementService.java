@@ -8,7 +8,6 @@ import com.fixmate.entity.User;
 import com.fixmate.exception.ForbiddenActionException;
 import com.fixmate.exception.ResourceNotFoundException;
 import com.fixmate.repository.ServiceRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +17,14 @@ import java.util.List;
 
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ServiceManagementService {
 
     private final ServiceRepository serviceRepository;
+
+    public ServiceManagementService(ServiceRepository serviceRepository) {
+        this.serviceRepository = serviceRepository;
+    }
 
     public List<ServiceResponse> getAllActiveServices() {
         return serviceRepository.findByActiveTrue().stream()

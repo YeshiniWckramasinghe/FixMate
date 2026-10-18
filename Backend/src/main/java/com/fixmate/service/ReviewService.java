@@ -11,19 +11,22 @@ import com.fixmate.exception.ForbiddenActionException;
 import com.fixmate.exception.ResourceNotFoundException;
 import com.fixmate.repository.BookingRepository;
 import com.fixmate.repository.ReviewRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
+
+    public ReviewService(ReviewRepository reviewRepository, BookingRepository bookingRepository) {
+        this.reviewRepository = reviewRepository;
+        this.bookingRepository = bookingRepository;
+    }
 
     @Transactional
     public ReviewResponse createReview(User customer, ReviewRequest request) {

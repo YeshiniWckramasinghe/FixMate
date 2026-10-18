@@ -12,7 +12,6 @@ import com.fixmate.exception.ForbiddenActionException;
 import com.fixmate.exception.ResourceNotFoundException;
 import com.fixmate.repository.BookingRepository;
 import com.fixmate.repository.ServiceRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,12 +19,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ServiceRepository serviceRepository;
+
+    public BookingService(BookingRepository bookingRepository, ServiceRepository serviceRepository) {
+        this.bookingRepository = bookingRepository;
+        this.serviceRepository = serviceRepository;
+    }
 
     @Transactional
     public BookingResponse createBooking(User customer, BookingRequest request) {
