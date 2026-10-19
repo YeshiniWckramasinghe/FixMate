@@ -621,3 +621,19 @@ table.data-table tr:last-child td {
     grid-template-columns: 1fr;
   }
 }
+
+.forgot-row {
+  text-align: right;
+  margin: -6px 0 16px;
+  font-size: 13px;
+}
+
+.forgot-row a {
+  color: var(--amber-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.btn {
+  text-decoration: none;
+}

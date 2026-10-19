@@ -62,6 +62,10 @@ export default function LoginPage() {
               placeholder="••••••••"
             />
           </div>
+           <div className="forgot-row">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </div>
+
           <button className="btn btn-primary btn-block" disabled={loading}>
             {loading ? 'Logging in…' : 'Log in'}
           </button>
