@@ -12,7 +12,9 @@ public record ServiceResponse(
         BigDecimal price,
         boolean active,
         Long providerId,
-        String providerName) {
+        String providerName,
+        Double averageRating, // null while the service has no reviews
+        long reviewCount) {
 
     public static ServiceResponse fromEntity(ServiceItem s) {
         return new ServiceResponse(
@@ -23,6 +25,14 @@ public record ServiceResponse(
                 s.getPrice(),
                 s.isActive(),
                 s.getProvider().getId(),
-                s.getProvider().getName());
+                s.getProvider().getName(),
+                null,
+                0);
+    }
+
+    public ServiceResponse withRating(Double averageRating, long reviewCount) {
+        return new ServiceResponse(
+                id, name, description, category, price, active,
+                providerId, providerName, averageRating, reviewCount);
     }
 }
