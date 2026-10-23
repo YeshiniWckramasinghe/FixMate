@@ -1011,6 +1011,46 @@
   transform: scale(1.12);
 }
 
+/* ---------- Ratings ---------- */
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.rating strong {
+  font-weight: 600;
+}
+
+.rating-count,
+.rating.none {
+  color: var(--ink-soft);
+}
+
+/* Five grey stars with an amber copy on top, clipped to the average (e.g. 4.3 of 5 = 86%) */
+.rating-stars {
+  position: relative;
+  display: inline-block;
+  color: #d3dae6;
+  font-size: 14px;
+  letter-spacing: 1px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rating-stars::before {
+  content: '★★★★★';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--pct, 0%);
+  overflow: hidden;
+  color: var(--amber);
+  white-space: nowrap;
+}
+
 /* ---------- Keyframes ---------- */
 @keyframes fx-fade-up {
   from {

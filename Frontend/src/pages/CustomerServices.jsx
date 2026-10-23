@@ -4,6 +4,7 @@ import client, { apiErrorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import CustomerLayout from '../components/CustomerLayout';
 import Modal from '../components/Modal';
+import RatingStars from '../components/RatingStars';
 import { formatPrice, iconFor, initials } from '../utils/format';
 
 const EMPTY_FORM = { bookingDate: '', bookingTime: '', address: '', notes: '' };
@@ -256,6 +257,7 @@ export default function CustomerServices() {
                         </span>
                         {s.providerName}
                       </span>
+                      <RatingStars average={s.averageRating} count={s.reviewCount} />
                     </div>
                     <p className="cat-desc">{s.description || 'No description provided.'}</p>
                   </div>
