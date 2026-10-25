@@ -14,7 +14,8 @@ public record ServiceResponse(
         Long providerId,
         String providerName,
         Double averageRating, // null while the service has no reviews
-        long reviewCount) {
+        long reviewCount,
+        String thumbnailUrl) { // null while the provider hasn't added a thumbnail
 
     public static ServiceResponse fromEntity(ServiceItem s) {
         return new ServiceResponse(
@@ -27,12 +28,19 @@ public record ServiceResponse(
                 s.getProvider().getId(),
                 s.getProvider().getName(),
                 null,
-                0);
+                0,
+                null);
     }
 
     public ServiceResponse withRating(Double averageRating, long reviewCount) {
         return new ServiceResponse(
                 id, name, description, category, price, active,
-                providerId, providerName, averageRating, reviewCount);
+                providerId, providerName, averageRating, reviewCount, thumbnailUrl);
+    }
+
+    public ServiceResponse withThumbnailUrl(String thumbnailUrl) {
+        return new ServiceResponse(
+                id, name, description, category, price, active,
+                providerId, providerName, averageRating, reviewCount, thumbnailUrl);
     }
 }

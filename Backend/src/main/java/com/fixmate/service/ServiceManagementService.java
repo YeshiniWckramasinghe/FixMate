@@ -9,10 +9,14 @@ import com.fixmate.exception.ForbiddenActionException;
 import com.fixmate.exception.ResourceNotFoundException;
 import com.fixmate.repository.ReviewRepository;
 import com.fixmate.repository.ReviewRepository.RatingSummary;
+import com.fixmate.repository.ServiceImageRepository;
+import com.fixmate.repository.ServiceImageRepository.ImageStamp;
 import com.fixmate.repository.ServiceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +28,15 @@ public class ServiceManagementService {
 
     private final ServiceRepository serviceRepository;
     private final ReviewRepository reviewRepository;
+    private final ServiceImageRepository imageRepository;
 
-    public ServiceManagementService(ServiceRepository serviceRepository, ReviewRepository reviewRepository) {
+    public ServiceManagementService(
+            ServiceRepository serviceRepository,
+            ReviewRepository reviewRepository,
+            ServiceImageRepository imageRepository) {
         this.serviceRepository = serviceRepository;
         this.reviewRepository = reviewRepository;
+        this.imageRepository = imageRepository;
     }
 
     public List<ServiceResponse> getAllActiveServices() {
@@ -68,7 +77,7 @@ public class ServiceManagementService {
                 .active(true)
                 .build();
 
-        // A brand new service has no reviews yet
+        // A brand new service has no reviews and no thumbnail yet
         return ServiceResponse.fromEntity(serviceRepository.save(service));
     }
 
@@ -94,7 +103,8 @@ public class ServiceManagementService {
         serviceRepository.save(service);
     }
 
-    // Adds the average rating and review count to a list of services using a single extra query
+    // Adds the average rating, review count and thumbnail link to a list of services.
+    // It uses two extra queries for the whole list, however long the list is.
     private List<ServiceResponse> toResponses(List<ServiceItem> items) {
         List<ServiceResponse> responses = new ArrayList<>();
         if (items.isEmpty()) {
@@ -102,19 +112,34 @@ public class ServiceManagementService {
         }
 
         List<Long> ids = items.stream().map(ServiceItem::getId).toList();
+
         Map<Long, RatingSummary> ratings = new HashMap<>();
         for (RatingSummary summary : reviewRepository.summarizeByServiceIds(ids)) {
             ratings.put(summary.getServiceId(), summary);
         }
 
+        Map<Long, LocalDateTime> thumbnails = new HashMap<>();
+        for (ImageStamp stamp : imageRepository.findStampsByServiceIds(ids)) {
+            thumbnails.put(stamp.getServiceId(), stamp.getUpdatedAt());
+        }
+
         for (ServiceItem item : items) {
             ServiceResponse response = ServiceResponse.fromEntity(item);
+
             RatingSummary summary = ratings.get(item.getId());
             if (summary != null) {
                 // Round to one decimal place, e.g. 4.3333 -> 4.3
                 double average = Math.round(summary.getAverageRating() * 10.0) / 10.0;
                 response = response.withRating(average, summary.getReviewCount());
             }
+
+            LocalDateTime changedAt = thumbnails.get(item.getId());
+            if (changedAt != null) {
+                // The ?v= part changes whenever the image changes, so browsers never show a stale one
+                long version = changedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                response = response.withThumbnailUrl("/api/services/" + item.getId() + "/thumbnail?v=" + version);
+            }
+
             responses.add(response);
         }
         return responses;
