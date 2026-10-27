@@ -5,9 +5,24 @@ import { useAuth } from '../context/AuthContext';
 import CustomerLayout from '../components/CustomerLayout';
 import Modal from '../components/Modal';
 import RatingStars from '../components/RatingStars';
+import { imageUrl } from '../utils/image';
 import { formatPrice, iconFor, initials } from '../utils/format';
 
 const EMPTY_FORM = { bookingDate: '', bookingTime: '', address: '', notes: '' };
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'rating', label: 'Top rated' },
+  { value: 'price-asc', label: 'Price: low to high' },
+  { value: 'price-desc', label: 'Price: high to low' },
+];
+
+const RATING_OPTIONS = [
+  { value: 0, label: 'Any rating' },
+  { value: 3, label: '3 stars and up' },
+  { value: 4, label: '4 stars and up' },
+  { value: 4.5, label: '4.5 stars and up' },
+];
 
 export default function CustomerServices() {
   const { user } = useAuth();
@@ -17,6 +32,10 @@ export default function CustomerServices() {
   const [error, setError] = useState('');
   const [category, setCategory] = useState('');
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('newest');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minRating, setMinRating] = useState(0);
 
   const [booking, setBooking] = useState(null); // the service being booked
   const [form, setForm] = useState(EMPTY_FORM);
@@ -50,17 +69,64 @@ export default function CustomerServices() {
     return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
   }, [services]);
 
-  // Filter by chip + search text, all in the browser
+  // Cheapest and dearest price, shown as hints in the price boxes
+  const priceBounds = useMemo(() => {
+    const prices = services.map((s) => Number(s.price));
+    return prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : { min: 0, max: 0 };
+  }, [services]);
+
+  // Score used by "Top rated". A plain average would put a single 5-star review above a service
+  // with ten reviews averaging 4.8, so each average is pulled towards the overall average until
+  // the service has a few reviews of its own. Services with no reviews go last.
+  const ratingScore = useMemo(() => {
+    const rated = services.filter((s) => s.reviewCount > 0);
+    const overall = rated.length
+      ? rated.reduce((sum, s) => sum + s.averageRating, 0) / rated.length
+      : 0;
+    const weight = 3;
+    return (s) =>
+      s.reviewCount > 0
+        ? (s.reviewCount * s.averageRating + weight * overall) / (s.reviewCount + weight)
+        : -1;
+  }, [services]);
+
+  // Filter by category, search text, price and rating, then sort. All in the browser.
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return services.filter((s) => {
+    const min = minPrice === '' ? null : Number(minPrice);
+    const max = maxPrice === '' ? null : Number(maxPrice);
+
+    const matching = services.filter((s) => {
       if (category && s.category !== category) return false;
+      if (min !== null && Number(s.price) < min) return false;
+      if (max !== null && Number(s.price) > max) return false;
+      if (minRating > 0 && !(s.reviewCount > 0 && s.averageRating >= minRating)) return false;
       if (!q) return true;
       return [s.name, s.description, s.category, s.providerName].some((value) =>
         (value || '').toLowerCase().includes(q)
       );
     });
-  }, [services, category, query]);
+
+    const byNewest = (a, b) => b.id - a.id; // newer services have bigger ids
+    const sorted = [...matching];
+    if (sort === 'rating') {
+      sorted.sort(
+        (a, b) => ratingScore(b) - ratingScore(a) || b.reviewCount - a.reviewCount || byNewest(a, b)
+      );
+    } else if (sort === 'price-asc') {
+      sorted.sort((a, b) => Number(a.price) - Number(b.price) || byNewest(a, b));
+    } else if (sort === 'price-desc') {
+      sorted.sort((a, b) => Number(b.price) - Number(a.price) || byNewest(a, b));
+    } else {
+      sorted.sort(byNewest);
+    }
+    return sorted;
+  }, [services, category, query, minPrice, maxPrice, minRating, sort, ratingScore]);
+
+  const filtersActive = Boolean(
+    category || query.trim() || minPrice !== '' || maxPrice !== '' || minRating > 0
+  );
+  const isCustomised = filtersActive || sort !== 'newest';
 
   const scrollToServices = () => {
     document.getElementById('services')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -69,6 +135,10 @@ export default function CustomerServices() {
   const clearFilters = () => {
     setCategory('');
     setQuery('');
+    setMinPrice('');
+    setMaxPrice('');
+    setMinRating(0);
+    setSort('newest');
   };
 
   const openBooking = (service) => {
@@ -177,7 +247,8 @@ export default function CustomerServices() {
             <h2>Available services</h2>
             {!loading && !error && (
               <span className="count">
-                {visible.length} {visible.length === 1 ? 'service' : 'services'}
+                {filtersActive ? `${visible.length} of ${services.length}` : visible.length}{' '}
+                {(filtersActive ? services.length : visible.length) === 1 ? 'service' : 'services'}
                 {category ? ` in ${category}` : ''}
               </span>
             )}
@@ -203,6 +274,69 @@ export default function CustomerServices() {
                   <span className="n">{count}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {!loading && !error && services.length > 0 && (
+            <div className="toolbar" role="group" aria-label="Filter and sort services">
+              <div className="tool">
+                <label htmlFor="min-price">Price (Rs.)</label>
+                <div className="price-range">
+                  <input
+                    id="min-price"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    placeholder={String(priceBounds.min)}
+                    aria-label="Minimum price"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                  />
+                  <span>to</span>
+                  <input
+                    id="max-price"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    placeholder={String(priceBounds.max)}
+                    aria-label="Maximum price"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="tool">
+                <label htmlFor="min-rating">Rating</label>
+                <select
+                  id="min-rating"
+                  value={minRating}
+                  onChange={(e) => setMinRating(Number(e.target.value))}
+                >
+                  {RATING_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="tool tool-end">
+                <label htmlFor="sort-by">Sort by</label>
+                <select id="sort-by" value={sort} onChange={(e) => setSort(e.target.value)}>
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {isCustomised && (
+                <button type="button" className="link-btn" onClick={clearFilters}>
+                  Reset all
+                </button>
+              )}
             </div>
           )}
 
@@ -235,17 +369,27 @@ export default function CustomerServices() {
           ) : visible.length === 0 ? (
             <div className="site-empty">
               <h3>Nothing matches your search</h3>
-              <p>Try a different word, or clear the filters to see every service.</p>
+              <p>Try a different word, widen the price range, or reset the filters to see every service.</p>
               <button type="button" className="btn btn-ghost" onClick={clearFilters}>
                 Clear filters
               </button>
             </div>
           ) : (
-            <div className="catalogue" key={category || 'all'}>
+            <div className="catalogue" key={`${category}|${sort}|${minRating}`}>
               {visible.map((s, i) => (
                 <article className="cat-row" key={s.id} style={{ '--i': i }}>
-                  <div className="cat-icon" aria-hidden="true">
-                    {iconFor(s.category)}
+                  <div className="cat-media" aria-hidden="true">
+                    <span className="cat-emoji">{iconFor(s.category)}</span>
+                    {s.thumbnailUrl && (
+                      <img
+                        src={imageUrl(s.thumbnailUrl)}
+                        alt=""
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="cat-body">
                     <h3>{s.name}</h3>
@@ -299,7 +443,11 @@ export default function CustomerServices() {
         <Modal title={`Book ${booking.name}`} onClose={() => setBooking(null)}>
           <div className="book-summary">
             <div className="cat-icon" aria-hidden="true">
-              {iconFor(booking.category)}
+              {booking.thumbnailUrl ? (
+                <img src={imageUrl(booking.thumbnailUrl)} alt="" />
+              ) : (
+                iconFor(booking.category)
+              )}
             </div>
             <div>
               <strong>{booking.name}</strong>

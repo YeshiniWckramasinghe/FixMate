@@ -520,7 +520,7 @@
 
 .cat-row {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: center;
   gap: 20px;
   padding: 20px 24px;
@@ -546,8 +546,42 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  overflow: hidden;
   background: var(--navy-900);
   font-size: 26px;
+}
+
+.cat-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Service picture. The emoji plate sits underneath, so it shows if there is no picture
+   or the picture fails to load. */
+.cat-media {
+  position: relative;
+  width: 96px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--navy-900);
+  display: grid;
+  place-items: center;
+}
+
+.cat-emoji {
+  font-size: 28px;
+}
+
+.cat-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .cat-body h3 {
@@ -621,7 +655,7 @@
 /* Loading placeholders */
 .skeleton-row {
   display: grid;
-  grid-template-columns: 56px 1fr;
+  grid-template-columns: 96px 1fr;
   gap: 20px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border);
@@ -635,9 +669,9 @@
 }
 
 .sk-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 96px;
+  height: 72px;
+  border-radius: 10px;
 }
 
 .sk-line {
@@ -1011,6 +1045,70 @@
   transform: scale(1.12);
 }
 
+/* ---------- Sort and filter toolbar ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tool label {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tool-end {
+  margin-left: auto;
+}
+
+.tool select,
+.tool input {
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font: 14px var(--font-body);
+}
+
+.tool input[type='number'] {
+  width: 112px;
+}
+
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.link-btn {
+  padding: 9px 2px;
+  border: 0;
+  background: none;
+  color: var(--amber-dark);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ---------- Ratings ---------- */
 .rating {
   display: inline-flex;
@@ -1196,14 +1294,17 @@
   }
 
   .cat-row {
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr);
     gap: 14px 16px;
     padding: 18px 16px;
   }
 
-  .cat-icon {
-    width: 48px;
-    height: 48px;
+  .cat-media {
+    width: 72px;
+    height: 54px;
+  }
+
+  .cat-emoji {
     font-size: 22px;
   }
 
@@ -1233,6 +1334,29 @@
 
   .b-facts > div:last-child {
     grid-column: 1 / -1;
+  }
+
+  .toolbar {
+    padding: 14px;
+  }
+
+  .tool,
+  .tool-end {
+    flex: 1 1 140px;
+    margin-left: 0;
+  }
+
+  .tool select {
+    width: 100%;
+  }
+
+  .tool:first-child {
+    flex-basis: 100%;
+  }
+
+  .tool input[type='number'] {
+    flex: 1;
+    width: auto;
   }
 
   .toast {
