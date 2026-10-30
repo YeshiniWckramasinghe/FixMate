@@ -24,10 +24,15 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ServiceRepository serviceRepository;
+    private final AvailabilityService availabilityService;
 
-    public BookingService(BookingRepository bookingRepository, ServiceRepository serviceRepository) {
+    public BookingService(
+            BookingRepository bookingRepository,
+            ServiceRepository serviceRepository,
+            AvailabilityService availabilityService) {
         this.bookingRepository = bookingRepository;
         this.serviceRepository = serviceRepository;
+        this.availabilityService = availabilityService;
     }
 
     @Transactional
@@ -38,6 +43,10 @@ public class BookingService {
         if (!service.isActive()) {
             throw new BadRequestException("This service is currently unavailable");
         }
+
+        // The time must be one of the provider's open slots and must not already be taken
+        availabilityService.assertSlotBookable(
+                service.getProvider().getId(), request.getBookingDate(), request.getBookingTime());
 
         Booking booking = Booking.builder()
                 .customer(customer)
