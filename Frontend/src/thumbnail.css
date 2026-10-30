@@ -1,0 +1,84 @@
+/* Thumbnail pieces used on the provider's "My Services" screen */
+
+.svc-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.svc-thumb {
+  width: 96px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #e8edf4;
+}
+
+.svc-thumb.empty {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.thumb-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.thumb-preview {
+  width: 128px;
+  height: 96px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #e8edf4;
+}
+
+.thumb-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb-preview.empty {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.thumb-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.thumb-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.thumb-hint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.thumb-hidden-input {
+  display: none;
+}
