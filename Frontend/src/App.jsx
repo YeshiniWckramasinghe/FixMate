@@ -13,6 +13,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminBookings from './pages/AdminBookings';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ProviderAvailability from './pages/ProviderAvailability';
 
 const HOME_BY_ROLE = {
   CUSTOMER: '/services',
@@ -91,6 +92,14 @@ export default function App() {
             element={
               <ProtectedRoute role="ADMIN">
                 <AdminBookings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/provider/availability"
+            element={
+              <ProtectedRoute role="PROVIDER">
+                <ProviderAvailability />
               </ProtectedRoute>
             }
           />

@@ -1109,6 +1109,52 @@
   cursor: pointer;
 }
 
+/* ---------- Time slots in the booking form ---------- */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.slot {
+  padding: 9px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: 500 14px var(--font-body);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.slot:hover:not(:disabled) {
+  border-color: var(--navy-700);
+}
+
+.slot.selected {
+  border-color: var(--navy-900);
+  background: var(--navy-900);
+  color: #fff;
+}
+
+.slot:disabled {
+  background: var(--paper);
+  color: #9aa4b5;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.slot-hint {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.slot-grid + .slot-hint {
+  margin-top: 10px;
+}
+
 /* ---------- Ratings ---------- */
 .rating {
   display: inline-flex;

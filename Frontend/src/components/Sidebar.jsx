@@ -8,6 +8,7 @@ const NAV_BY_ROLE = {
   ],
   PROVIDER: [
     { to: '/provider/services', label: 'My Services' },
+    { to: '/provider/availability', label: 'Availability' },
     { to: '/provider/bookings', label: 'Bookings Received' },
   ],
   ADMIN: [

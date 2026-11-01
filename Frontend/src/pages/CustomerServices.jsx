@@ -6,7 +6,7 @@ import CustomerLayout from '../components/CustomerLayout';
 import Modal from '../components/Modal';
 import RatingStars from '../components/RatingStars';
 import { imageUrl } from '../utils/image';
-import { formatPrice, iconFor, initials } from '../utils/format';
+import { formatPrice, formatTime, iconFor, initials } from '../utils/format';
 
 const EMPTY_FORM = { bookingDate: '', bookingTime: '', address: '', notes: '' };
 
@@ -42,6 +42,12 @@ export default function CustomerServices() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [toast, setToast] = useState('');
+
+  // Open times for the chosen date
+  const [slots, setSlots] = useState(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState('');
+  const [slotsVersion, setSlotsVersion] = useState(0); // bump to load the times again
 
   const loadServices = useCallback(async () => {
     setLoading(true);
@@ -141,14 +147,50 @@ export default function CustomerServices() {
     setSort('newest');
   };
 
+  // Ask the backend which times are open whenever the service or the date changes
+  useEffect(() => {
+    if (!booking || !form.bookingDate) {
+      setSlots(null);
+      setSlotsError('');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setSlotsLoading(true);
+    setSlotsError('');
+    client
+      .get(`/api/services/${booking.id}/slots`, { params: { date: form.bookingDate } })
+      .then(({ data }) => {
+        if (!cancelled) setSlots(data);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setSlots(null);
+          setSlotsError(apiErrorMessage(e));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [booking, form.bookingDate, slotsVersion]);
+
   const openBooking = (service) => {
     setBooking(service);
     setSubmitError('');
     setForm(EMPTY_FORM);
+    setSlots(null);
   };
 
   const submitBooking = async (e) => {
     e.preventDefault();
+    if (!form.bookingTime) {
+      setSubmitError('Please choose one of the available times.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError('');
     const serviceName = booking.name;
@@ -165,12 +207,16 @@ export default function CustomerServices() {
       setTimeout(() => setToast(''), 6000);
     } catch (err) {
       setSubmitError(apiErrorMessage(err));
+      // Someone may have just taken that time, so show the up-to-date list
+      setForm((current) => ({ ...current, bookingTime: '' }));
+      setSlotsVersion((v) => v + 1);
     } finally {
       setSubmitting(false);
     }
   };
 
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+  const maxDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
   const firstName = user?.name?.split(' ')[0] || 'there';
 
   return (
@@ -459,28 +505,57 @@ export default function CustomerServices() {
           {submitError && <div className="alert alert-error">{submitError}</div>}
 
           <form onSubmit={submitBooking}>
-            <div className="grid-2">
-              <div className="field">
-                <label htmlFor="bk-date">Date</label>
-                <input
-                  id="bk-date"
-                  type="date"
-                  required
-                  min={today}
-                  value={form.bookingDate}
-                  onChange={(e) => setForm({ ...form, bookingDate: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="bk-time">Time</label>
-                <input
-                  id="bk-time"
-                  type="time"
-                  required
-                  value={form.bookingTime}
-                  onChange={(e) => setForm({ ...form, bookingTime: e.target.value })}
-                />
-              </div>
+            <div className="field">
+              <label htmlFor="bk-date">Date</label>
+              <input
+                id="bk-date"
+                type="date"
+                required
+                min={today}
+                max={maxDate}
+                value={form.bookingDate}
+                onChange={(e) => setForm({ ...form, bookingDate: e.target.value, bookingTime: '' })}
+              />
+            </div>
+
+            <div className="field">
+              <label id="bk-time-label">Time</label>
+              {!form.bookingDate ? (
+                <p className="slot-hint">Pick a date to see the available times.</p>
+              ) : slotsLoading ? (
+                <p className="slot-hint">Checking availability…</p>
+              ) : slotsError ? (
+                <div className="alert alert-error">{slotsError}</div>
+              ) : slots && !slots.scheduleSet ? (
+                <p className="slot-hint">
+                  This provider hasn’t published their working hours yet, so they can’t be booked
+                  online.
+                </p>
+              ) : slots && slots.slots.length === 0 ? (
+                <p className="slot-hint">There are no times available on this day. Please try another date.</p>
+              ) : slots ? (
+                <>
+                  <div className="slot-grid" role="radiogroup" aria-labelledby="bk-time-label">
+                    {slots.slots.map((slot) => (
+                      <button
+                        type="button"
+                        key={slot.time}
+                        role="radio"
+                        aria-checked={form.bookingTime === slot.time}
+                        disabled={!slot.available}
+                        className={`slot ${form.bookingTime === slot.time ? 'selected' : ''}`}
+                        onClick={() => setForm({ ...form, bookingTime: slot.time })}
+                      >
+                        {formatTime(slot.time)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="slot-hint">
+                    Each booking takes {slots.slotMinutes} minutes.
+                    {slots.slots.some((slot) => !slot.available) && ' Crossed-out times are already booked.'}
+                  </p>
+                </>
+              ) : null}
             </div>
             <div className="field">
               <label htmlFor="bk-address">Address</label>
