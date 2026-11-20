@@ -14,6 +14,7 @@ import AdminBookings from './pages/AdminBookings';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProviderAvailability from './pages/ProviderAvailability';
+import LandingPage from './pages/LandingPage';
 
 const HOME_BY_ROLE = {
   CUSTOMER: '/services',
@@ -27,13 +28,19 @@ function RoleHome() {
   return <Navigate to={HOME_BY_ROLE[user.role] || '/login'} replace />;
 }
 
+function HomeRoute() {
+  const { user, token } = useAuth();
+  if (!token || !user) return <LandingPage />;
+  return <Navigate to={HOME_BY_ROLE[user.role] || '/login'} replace />;
+}
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LandingPage auth="login" />} />
+          <Route path="/register" element={<LandingPage auth="register" />} />
+          
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -104,7 +111,7 @@ export default function App() {
             }
           />
 
-          <Route path="/" element={<RoleHome />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route path="*" element={<RoleHome />} />
         </Routes>
       </BrowserRouter>
