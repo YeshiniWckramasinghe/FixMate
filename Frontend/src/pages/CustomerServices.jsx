@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import client, { apiErrorMessage } from '../api/client';
-import { useAuth } from '../context/AuthContext';
 import CustomerLayout from '../components/CustomerLayout';
+import Icon from '../components/Icon';
 import Modal from '../components/Modal';
-import RatingStars from '../components/RatingStars';
 import { imageUrl } from '../utils/image';
 import { formatPrice, formatTime, iconFor, initials } from '../utils/format';
 
@@ -17,25 +16,60 @@ const SORT_OPTIONS = [
   { value: 'price-desc', label: 'Price: high to low' },
 ];
 
-const RATING_OPTIONS = [
-  { value: 0, label: 'Any rating' },
-  { value: 3, label: '3 stars and up' },
-  { value: 4, label: '4 stars and up' },
-  { value: 4.5, label: '4.5 stars and up' },
-];
+const RATING_BUTTONS = [4.5, 4, 3];
+
+// Pick an icon from the Figma set for a (free-text) category name
+function categoryIcon(category = '') {
+  const text = category.toLowerCase();
+  if (/electric/.test(text)) return 'bolt';
+  if (/plumb/.test(text)) return 'drop';
+  if (/computer|laptop|\bpc\b/.test(text)) return 'monitor';
+  if (/appliance/.test(text)) return 'tool';
+  if (/\bac\b|a\/c|air\s?con|cooling|hvac/.test(text)) return 'wind';
+  if (/clean/.test(text)) return 'sparkle';
+  return 'tool';
+}
+
+const AVATAR_COLORS = ['blue', 'teal', 'violet', 'orange'];
+
+// Round picture for a service: its thumbnail, or the provider's initials if there is none
+function ServiceAvatar({ service }) {
+  const [failed, setFailed] = useState(false);
+  const color = AVATAR_COLORS[service.id % AVATAR_COLORS.length];
+  const showImage = service.thumbnailUrl && !failed;
+  return (
+    <span className={`fm-avatar fm-avatar-xl fm-avatar-${color}`} aria-hidden="true">
+      {showImage ? (
+        <img
+          src={imageUrl(service.thumbnailUrl)}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        initials(service.providerName)
+      )}
+      <i>
+        <Icon name="check" size={11} />
+      </i>
+    </span>
+  );
+}
 
 export default function CustomerServices() {
-  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const urlQuery = searchParams.get('q') || '';
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [category, setCategory] = useState('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(urlQuery);
   const [sort, setSort] = useState('newest');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [minRating, setMinRating] = useState(0);
+  const [showFilters, setShowFilters] = useState(() => window.innerWidth > 820);
 
   const [booking, setBooking] = useState(null); // the service being booked
   const [form, setForm] = useState(EMPTY_FORM);
@@ -65,6 +99,11 @@ export default function CustomerServices() {
   useEffect(() => {
     loadServices();
   }, [loadServices]);
+
+  // The top-bar search sends people here as /services?q=...
+  useEffect(() => {
+    setQuery(urlQuery);
+  }, [urlQuery]);
 
   // Category chips, with how many services each one has
   const categories = useMemo(() => {
@@ -128,15 +167,6 @@ export default function CustomerServices() {
     }
     return sorted;
   }, [services, category, query, minPrice, maxPrice, minRating, sort, ratingScore]);
-
-  const filtersActive = Boolean(
-    category || query.trim() || minPrice !== '' || maxPrice !== '' || minRating > 0
-  );
-  const isCustomised = filtersActive || sort !== 'newest';
-
-  const scrollToServices = () => {
-    document.getElementById('services')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   const clearFilters = () => {
     setCategory('');
@@ -217,7 +247,6 @@ export default function CustomerServices() {
 
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
   const maxDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-  const firstName = user?.name?.split(' ')[0] || 'there';
 
   return (
     <CustomerLayout>
@@ -227,263 +256,213 @@ export default function CustomerServices() {
         </div>
       )}
 
-      <section className="hero">
-        <div className="hero-inner">
-          <div className="hero-copy">
-            <h1 className="rise" style={{ '--r': 0 }}>
-              Hi {firstName}, what needs fixing today?
-            </h1>
-            <p className="lead rise" style={{ '--r': 1 }}>
-              Book an approved technician, pick a time that suits you, and follow the job until
-              it’s done.
-            </p>
-            <form
-              className="hero-search rise"
-              style={{ '--r': 2 }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                scrollToServices();
-              }}
-            >
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by service, provider or problem"
-                aria-label="Search services"
-              />
-              <button className="btn btn-primary" type="submit">
-                Search
-              </button>
-            </form>
-          </div>
-
-          {/* One decorative moment: an example booking that moves through its stages once on load */}
-          <div className="ticket rise" style={{ '--r': 3 }} aria-hidden="true">
-            <div className="ticket-head">
-              <div className="ticket-icon">⚡</div>
-              <div>
-                <strong>Home wiring repair</strong>
-                <span>Tomorrow, 10:30 am</span>
-              </div>
-            </div>
-            <div className="ticket-tear" />
-            <ol className="ticket-steps">
-              <li style={{ '--s': 0 }}>
-                <span className="dot" />
-                <span className="lbl">Requested</span>
-              </li>
-              <li style={{ '--s': 1 }}>
-                <span className="dot" />
-                <span className="lbl">Confirmed</span>
-              </li>
-              <li style={{ '--s': 2 }}>
-                <span className="dot" />
-                <span className="lbl">Completed</span>
-              </li>
-            </ol>
-            <p className="ticket-note">Example of how a booking progresses</p>
+      <div className="fm-browse">
+        <div className="fm-page-header">
+          <div>
+            <span>Find a professional</span>
+            <h1>What can we help with?</h1>
+            <p>Browse verified professionals available near you.</p>
           </div>
         </div>
-      </section>
 
-      <section className="services" id="services">
-        <div className="wrap">
-          <div className="section-title">
-            <h2>Available services</h2>
-            {!loading && !error && (
-              <span className="count">
-                {filtersActive ? `${visible.length} of ${services.length}` : visible.length}{' '}
-                {(filtersActive ? services.length : visible.length) === 1 ? 'service' : 'services'}
-                {category ? ` in ${category}` : ''}
-              </span>
-            )}
+        <form className="fm-search-panel" onSubmit={(e) => e.preventDefault()} role="search">
+          <div className="fm-main-search">
+            <Icon name="search" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search electrician, plumber, AC repair..."
+              aria-label="Search services"
+            />
           </div>
+          <button
+            type="button"
+            className="fm-btn fm-btn-secondary"
+            aria-expanded={showFilters}
+            onClick={() => setShowFilters((open) => !open)}
+          >
+            <Icon name="filter" size={16} /> Filters
+          </button>
+          <button type="submit" className="fm-btn fm-btn-primary">
+            Search
+          </button>
+        </form>
 
-          {categories.length > 0 && (
-            <div className="chips" role="group" aria-label="Filter by category">
+        {categories.length > 0 && (
+          <div className="fm-quick-categories" role="group" aria-label="Filter by category">
+            {categories.map(([name, count]) => (
               <button
                 type="button"
-                className={`chip ${category === '' ? 'active' : ''}`}
-                onClick={() => setCategory('')}
+                key={name}
+                title={`${count} ${count === 1 ? 'service' : 'services'}`}
+                className={category === name ? 'fm-active' : ''}
+                aria-pressed={category === name}
+                onClick={() => setCategory(category === name ? '' : name)}
               >
-                All <span className="n">{services.length}</span>
+                <span>
+                  <Icon name={categoryIcon(name)} />
+                </span>
+                {name}
               </button>
-              {categories.map(([name, count]) => (
+            ))}
+          </div>
+        )}
+
+        <div className="fm-results-head">
+          <div>
+            <h2>
+              {loading || error
+                ? 'Professionals'
+                : `${visible.length || 'No'} ${visible.length === 1 ? 'service' : 'services'} found`}
+            </h2>
+            <p>{category ? `Showing ${category}` : 'Showing all approved services'}</p>
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label="Sort services"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={`fm-browse-layout ${showFilters ? '' : 'fm-no-filters'}`}>
+          <aside className="fm-filters" aria-label="Filters">
+            <h3>
+              Filters
+              <button type="button" onClick={clearFilters}>
+                Reset
+              </button>
+            </h3>
+
+            <label>Price range (Rs.)</label>
+            <div className="fm-price-inputs">
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder={String(priceBounds.min)}
+                aria-label="Minimum price"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder={String(priceBounds.max)}
+                aria-label="Maximum price"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+
+            <label>Minimum rating</label>
+            <div className="fm-rating-filter">
+              {RATING_BUTTONS.map((r) => (
                 <button
                   type="button"
-                  key={name}
-                  className={`chip ${category === name ? 'active' : ''}`}
-                  onClick={() => setCategory(name)}
+                  key={r}
+                  className={minRating === r ? 'fm-active' : ''}
+                  aria-pressed={minRating === r}
+                  onClick={() => setMinRating(minRating === r ? 0 : r)}
                 >
-                  <span aria-hidden="true">{iconFor(name)}</span> {name}{' '}
-                  <span className="n">{count}</span>
+                  <span className="fm-stars">
+                    <Icon name="star" size={13} /> <b>{r}</b>
+                  </span>
+                  &amp; up
                 </button>
               ))}
             </div>
-          )}
+          </aside>
 
-          {!loading && !error && services.length > 0 && (
-            <div className="toolbar" role="group" aria-label="Filter and sort services">
-              <div className="tool">
-                <label htmlFor="min-price">Price (Rs.)</label>
-                <div className="price-range">
-                  <input
-                    id="min-price"
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    placeholder={String(priceBounds.min)}
-                    aria-label="Minimum price"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                  />
-                  <span>to</span>
-                  <input
-                    id="max-price"
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    placeholder={String(priceBounds.max)}
-                    aria-label="Maximum price"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                  />
-                </div>
+          <div className="fm-provider-list">
+            {loading ? (
+              <div aria-busy="true" aria-label="Loading services" className="fm-provider-list">
+                {[0, 1, 2].map((i) => (
+                  <div className="fm-skeleton" key={i} />
+                ))}
               </div>
-
-              <div className="tool">
-                <label htmlFor="min-rating">Rating</label>
-                <select
-                  id="min-rating"
-                  value={minRating}
-                  onChange={(e) => setMinRating(Number(e.target.value))}
-                >
-                  {RATING_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="tool tool-end">
-                <label htmlFor="sort-by">Sort by</label>
-                <select id="sort-by" value={sort} onChange={(e) => setSort(e.target.value)}>
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {isCustomised && (
-                <button type="button" className="link-btn" onClick={clearFilters}>
-                  Reset all
+            ) : error ? (
+              <div className="fm-empty">
+                <h3>We couldn’t load the services</h3>
+                <p>{error}. Check that the FixMate backend is running, then try again.</p>
+                <button type="button" className="fm-btn fm-btn-primary" onClick={loadServices}>
+                  Try again
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            ) : services.length === 0 ? (
+              <div className="fm-empty">
+                <h3>No services are listed yet</h3>
+                <p>Services appear here once a provider has been approved and has added one.</p>
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="fm-empty">
+                <h3>Nothing matches your search</h3>
+                <p>
+                  Try a different word, widen the price range, or reset the filters to see every
+                  service.
+                </p>
+                <button type="button" className="fm-btn fm-btn-secondary" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              visible.map((s) => (
+                <article className="fm-provider-list-card" key={s.id}>
+                  <ServiceAvatar service={s} />
 
-          {loading ? (
-            <div className="catalogue" aria-busy="true" aria-label="Loading services">
-              {[0, 1, 2].map((i) => (
-                <div className="skeleton-row" key={i}>
-                  <div className="sk sk-icon" />
-                  <div>
-                    <div className="sk sk-line w40" />
-                    <div className="sk sk-line w25" />
-                    <div className="sk sk-line w70" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="site-empty">
-              <h3>We couldn’t load the services</h3>
-              <p>{error}. Check that the FixMate backend is running, then try again.</p>
-              <button type="button" className="btn btn-primary" onClick={loadServices}>
-                Try again
-              </button>
-            </div>
-          ) : services.length === 0 ? (
-            <div className="site-empty">
-              <h3>No services are listed yet</h3>
-              <p>Services appear here once a provider has been approved and has added one.</p>
-            </div>
-          ) : visible.length === 0 ? (
-            <div className="site-empty">
-              <h3>Nothing matches your search</h3>
-              <p>Try a different word, widen the price range, or reset the filters to see every service.</p>
-              <button type="button" className="btn btn-ghost" onClick={clearFilters}>
-                Clear filters
-              </button>
-            </div>
-          ) : (
-            <div className="catalogue" key={`${category}|${sort}|${minRating}`}>
-              {visible.map((s, i) => (
-                <article className="cat-row" key={s.id} style={{ '--i': i }}>
-                  <div className="cat-media" aria-hidden="true">
-                    <span className="cat-emoji">{iconFor(s.category)}</span>
-                    {s.thumbnailUrl && (
-                      <img
-                        src={imageUrl(s.thumbnailUrl)}
-                        alt=""
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className="cat-body">
-                    <h3>{s.name}</h3>
-                    <div className="cat-meta">
-                      <span className="tag">{s.category}</span>
-                      <span className="by">
-                        <span className="mini-avatar" aria-hidden="true">
-                          {initials(s.providerName)}
-                        </span>
-                        {s.providerName}
-                      </span>
-                      <RatingStars average={s.averageRating} count={s.reviewCount} />
+                  <div className="fm-provider-info">
+                    <div className="fm-provider-title">
+                      <div>
+                        <h3>{s.name}</h3>
+                        <p>
+                          {s.providerName} · {s.category}
+                        </p>
+                      </div>
                     </div>
-                    <p className="cat-desc">{s.description || 'No description provided.'}</p>
+                    <div className="fm-provider-meta">
+                      {s.reviewCount > 0 ? (
+                        <>
+                          <span className="fm-stars">
+                            <Icon name="star" size={15} /> <b>{s.averageRating.toFixed(1)}</b>
+                          </span>
+                          <span>
+                            {s.reviewCount} {s.reviewCount === 1 ? 'review' : 'reviews'}
+                          </span>
+                        </>
+                      ) : (
+                        <span>No reviews yet</span>
+                      )}
+                    </div>
+                    <p className="fm-provider-blurb">
+                      {s.description || 'No description provided.'}
+                    </p>
                   </div>
-                  <div className="cat-side">
-                    <div className="cat-price">{formatPrice(s.price)}</div>
+
+                  <div className="fm-list-price">
+                    <small>Starts from</small>
+                    <b>LKR {Number(s.price).toLocaleString()}</b>
+                    <small>per visit</small>
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
+                      className="fm-btn fm-btn-primary"
                       onClick={() => openBooking(s)}
                     >
                       Book now
                     </button>
                   </div>
                 </article>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="assurance">
-        <div className="wrap assurance-grid">
-          <div className="assurance-item">
-            <h3>Approved providers</h3>
-            <p>An admin reviews every provider before their services appear here.</p>
-          </div>
-          <div className="assurance-item">
-            <h3>Follow your booking</h3>
-            <p>See each job move from requested, to confirmed, to completed.</p>
-          </div>
-          <div className="assurance-item">
-            <h3>Review when it’s done</h3>
-            <p>Once a provider marks the job completed, you can rate how it went.</p>
+              ))
+            )}
           </div>
         </div>
-      </section>
+      </div>
 
       {booking && (
         <Modal title={`Book ${booking.name}`} onClose={() => setBooking(null)}>
