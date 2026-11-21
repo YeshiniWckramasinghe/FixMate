@@ -2,8 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import CustomerServices from './pages/CustomerServices';
 import CustomerBookings from './pages/CustomerBookings';
 import ProviderServices from './pages/ProviderServices';
@@ -14,11 +12,12 @@ import AdminBookings from './pages/AdminBookings';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProviderAvailability from './pages/ProviderAvailability';
+import ProviderOverview from './pages/ProviderOverview';
 import LandingPage from './pages/LandingPage';
 
 const HOME_BY_ROLE = {
   CUSTOMER: '/services',
-  PROVIDER: '/provider/services',
+  PROVIDER: '/provider/overview',
   ADMIN: '/admin/dashboard',
 };
 
@@ -28,11 +27,13 @@ function RoleHome() {
   return <Navigate to={HOME_BY_ROLE[user.role] || '/login'} replace />;
 }
 
+// "/" shows the landing page to visitors, and sends logged-in people to their own home
 function HomeRoute() {
   const { user, token } = useAuth();
   if (!token || !user) return <LandingPage />;
   return <Navigate to={HOME_BY_ROLE[user.role] || '/login'} replace />;
 }
+
 export default function App() {
   return (
     <AuthProvider>
@@ -40,7 +41,6 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LandingPage auth="login" />} />
           <Route path="/register" element={<LandingPage auth="register" />} />
-          
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -61,6 +61,14 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/provider/overview"
+            element={
+              <ProtectedRoute role="PROVIDER">
+                <ProviderOverview />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/provider/services"
             element={

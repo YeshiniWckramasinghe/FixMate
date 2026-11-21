@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import client, { apiErrorMessage } from '../api/client';
-import Sidebar from '../components/Sidebar';
+import ProviderLayout from '../components/ProviderLayout';
 import {
   DAYS,
   DEFAULT_RANGE,
@@ -86,9 +86,7 @@ export default function ProviderAvailability() {
   };
 
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <main className="main">
+    <ProviderLayout>
         <div className="page-header">
           <h1>Availability</h1>
           <p>Choose the hours customers can book you. They only see times inside these hours.</p>
@@ -204,7 +202,6 @@ export default function ProviderAvailability() {
             </>
           )
         )}
-      </main>
-    </div>
+    </ProviderLayout>
   );
 }

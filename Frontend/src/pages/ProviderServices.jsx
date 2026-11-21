@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import client, { apiErrorMessage } from '../api/client';
-import Sidebar from '../components/Sidebar';
+import ProviderLayout from '../components/ProviderLayout';
 import Modal from '../components/Modal';
 import { imageUrl, resizeImage } from '../utils/image';
 import '../thumbnail.css';
@@ -161,9 +161,7 @@ export default function ProviderServices() {
   };
 
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <main className="main">
+    <ProviderLayout>
         <div className="page-header">
           <h1>My Services</h1>
           <p>Manage what you offer, how much you charge, and the picture customers see.</p>
@@ -317,7 +315,6 @@ export default function ProviderServices() {
             </form>
           </Modal>
         )}
-      </main>
-    </div>
+    </ProviderLayout>
   );
 }

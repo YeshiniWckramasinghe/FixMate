@@ -5,7 +5,7 @@ import Icon from './Icon';
 
 const HOME_BY_ROLE = {
   CUSTOMER: '/services',
-  PROVIDER: '/provider/services',
+  PROVIDER: '/provider/overview',
   ADMIN: '/admin/dashboard',
 };
 

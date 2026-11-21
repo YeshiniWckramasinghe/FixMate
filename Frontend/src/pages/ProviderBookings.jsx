@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import client, { apiErrorMessage } from '../api/client';
-import Sidebar from '../components/Sidebar';
+import ProviderLayout from '../components/ProviderLayout';
 import StatusPill from '../components/StatusPill';
 
 export default function ProviderBookings() {
@@ -40,9 +40,7 @@ export default function ProviderBookings() {
   };
 
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <main className="main">
+    <ProviderLayout>
         <div className="page-header">
           <h1>Bookings Received</h1>
           <p>Accept, reject, or complete requests from customers.</p>
@@ -110,7 +108,6 @@ export default function ProviderBookings() {
             </div>
           ))
         )}
-      </main>
-    </div>
+    </ProviderLayout>
   );
 }
