@@ -409,3 +409,199 @@
     background-position: -200% 0;
   }
 }
+
+
+/* ---------------- My services + Bookings pages ---------------- */
+.fm-tabs {
+  display: flex;
+  gap: 23px;
+  border-bottom: 1px solid #dfe4eb;
+  margin-bottom: 18px;
+}
+.fm-tabs button {
+  background: none;
+  padding: 0 0 11px;
+  color: #7b8494;
+  font-size: 10px;
+  position: relative;
+}
+.fm-tabs button.fm-active {
+  color: var(--blue);
+  font-weight: 700;
+}
+.fm-tabs button.fm-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--blue);
+}
+.fm-tabs button span {
+  background: #eef1f5;
+  padding: 2px 6px;
+  border-radius: 9px;
+  margin-left: 5px;
+  font-size: 8px;
+}
+.fm-table-title,
+.fm-table-person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.fm-table-title > div,
+.fm-table-person > div {
+  display: flex;
+  flex-direction: column;
+}
+.fm-service-table-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+  background: var(--blue-50);
+}
+.fm-row-actions,
+.fm-table-buttons {
+  display: flex;
+  gap: 5px;
+}
+.fm-row-actions button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #7c8798;
+  background: #f5f7f9;
+  border-radius: 6px;
+}
+.fm-row-actions svg {
+  width: 14px;
+}
+.fm-switch {
+  width: 32px;
+  height: 18px;
+  background: #cbd2dc;
+  border-radius: 12px;
+  padding: 2px;
+  transition: 0.2s;
+}
+.fm-switch i {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: 0.2s;
+}
+.fm-switch.fm-on {
+  background: var(--blue);
+}
+.fm-switch.fm-on i {
+  transform: translateX(14px);
+}
+.fm-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+.fm-compact-tabs {
+  margin: 0 0 15px;
+  border: 0;
+}
+.fm-compact-tabs button {
+  padding: 8px 12px;
+  border-radius: 7px;
+}
+.fm-compact-tabs button.fm-active {
+  color: var(--blue);
+  background: #eaf2ff;
+}
+.fm-compact-tabs button.fm-active::after {
+  display: none;
+}
+.fm-table-buttons button {
+  font-size: 8px;
+  font-weight: 700;
+  background: #eff6ff;
+  color: var(--blue);
+  border-radius: 5px;
+  padding: 5px 7px;
+}
+.fm-table-buttons .fm-reject {
+  background: #fff1f2;
+  color: #dc2626;
+}
+
+@media (max-width: 560px) {
+  .fm-toolbar {
+      flex-direction: column;
+  }
+  .fm-compact-tabs {
+      width: 100%;
+      overflow-x: auto;
+  }
+}
+
+/* adjustments for the real app */
+.fm-tabs button,
+.fm-switch,
+.fm-row-actions button,
+.fm-table-buttons button {
+  font-family: inherit;
+}
+.fm-tabs button {
+  white-space: nowrap;
+}
+.fm-switch {
+  flex: none;
+}
+.fm-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.fm-row-actions button:hover {
+  background: #eaf0f8;
+  color: var(--blue);
+}
+.fm-table-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.fm-table-buttons button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.fm-table-title img {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex: none;
+}
+.fm-table-card td small + small {
+  margin-top: 2px;
+}
+.fm-table-card td .fm-note {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-table-card tr.fm-row-inactive td:not(:last-child) {
+  opacity: 0.6;
+}
+.fm-skeleton-row td {
+  padding: 16px 15px;
+}
+.fm-alert-error a {
+  color: #b42318;
+  font-weight: 700;
+  text-decoration: underline;
+}
+.fm-page-header > .fm-btn {
+  flex: none;
+}

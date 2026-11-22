@@ -1,12 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import client, { apiErrorMessage } from '../api/client';
-import ProviderLayout from '../components/ProviderLayout';
+import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import ProviderLayout from '../components/ProviderLayout';
 import { imageUrl, resizeImage } from '../utils/image';
 import '../thumbnail.css';
+import '../provider.css';
 
 const EMPTY_FORM = { name: '', description: '', category: '', price: '' };
+
+// Pick an icon for a (free-text) category name when a service has no thumbnail
+function categoryIcon(category = '') {
+  const text = category.toLowerCase();
+  if (/electric/.test(text)) return 'bolt';
+  if (/plumb/.test(text)) return 'drop';
+  if (/computer|laptop|\bpc\b/.test(text)) return 'monitor';
+  if (/appliance/.test(text)) return 'tool';
+  if (/\bac\b|a\/c|air\s?con|cooling|hvac/.test(text)) return 'wind';
+  if (/clean/.test(text)) return 'sparkle';
+  return 'tool';
+}
 
 export default function ProviderServices() {
   const [services, setServices] = useState([]);
@@ -18,6 +32,8 @@ export default function ProviderServices() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [hasSchedule, setHasSchedule] = useState(true); // false once we know there are no working hours
+  const [slotMinutes, setSlotMinutes] = useState(60); // every booking takes one slot of this length
+  const [busyId, setBusyId] = useState(null);
 
   // Thumbnail state for the form
   const fileInput = useRef(null);
@@ -42,7 +58,10 @@ export default function ProviderServices() {
     load();
     client
       .get('/api/provider/availability')
-      .then(({ data }) => setHasSchedule(data.windows.length > 0))
+      .then(({ data }) => {
+        setHasSchedule(data.windows.length > 0);
+        if (data.slotMinutes) setSlotMinutes(data.slotMinutes);
+      })
       .catch(() => {}); // the banner is only a hint, so ignore errors
   }, []);
 
@@ -151,170 +170,233 @@ export default function ProviderServices() {
     }
   };
 
-  const remove = async (id) => {
+  // The backend only lets a service be switched off (DELETE = deactivate), not back on
+  const deactivate = async (service) => {
+    const ok = window.confirm(
+      `Deactivate "${service.name}"? Customers will no longer see it, and it can't be switched back on from here.`
+    );
+    if (!ok) return;
+    setBusyId(service.id);
+    setError('');
     try {
-      await client.delete(`/api/services/${id}`);
+      await client.delete(`/api/services/${service.id}`);
       await load();
     } catch (e) {
       setError(apiErrorMessage(e));
+    } finally {
+      setBusyId(null);
     }
   };
 
   return (
     <ProviderLayout>
-        <div className="page-header">
-          <h1>My Services</h1>
-          <p>Manage what you offer, how much you charge, and the picture customers see.</p>
+      <div className="fm-dash">
+        <div className="fm-page-header">
+          <div>
+            <h1>My services</h1>
+            <p>Manage the services and pricing customers see.</p>
+          </div>
+          <button type="button" className="fm-btn fm-btn-primary" onClick={openCreate}>
+            <Icon name="plus" size={16} /> Add new service
+          </button>
         </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && (
+          <div className="fm-alert-error" role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={load}>
+              Try again
+            </button>
+          </div>
+        )}
 
         {!hasSchedule && (
-          <div className="alert alert-error">
-            You haven’t set your working hours yet, so customers can’t book you online.{' '}
+          <div className="fm-alert-error" role="alert">
+            <span>
+              You haven’t set your working hours yet, so customers can’t book you online.
+            </span>
             <Link to="/provider/availability">Set your availability</Link>
           </div>
         )}
 
-        <div className="card-actions" style={{ marginBottom: 20 }}>
-          <button className="btn btn-primary" onClick={openCreate}>
-            + Add a service
-          </button>
+        <div className="fm-card fm-table-card">
+          {!loading && services.length === 0 ? (
+            <p className="fm-table-empty">
+              You haven’t listed any services yet. Use “Add new service” to create your first one.
+            </p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Base price</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading
+                  ? [0, 1, 2].map((i) => (
+                      <tr className="fm-skeleton-row" key={i}>
+                        <td colSpan={5}>
+                          <div className="fm-skeleton-block" style={{ height: 32 }} />
+                        </td>
+                      </tr>
+                    ))
+                  : services.map((s) => (
+                      <tr key={s.id} className={s.active ? '' : 'fm-row-inactive'}>
+                        <td>
+                          <div className="fm-table-title">
+                            {s.thumbnailUrl ? (
+                              <img src={imageUrl(s.thumbnailUrl)} alt="" />
+                            ) : (
+                              <span className="fm-service-table-icon">
+                                <Icon name={categoryIcon(s.category)} />
+                              </span>
+                            )}
+                            <div>
+                              <b>{s.name}</b>
+                              <small>{s.category}</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>LKR {Number(s.price).toLocaleString()}</td>
+                        <td>{slotMinutes} min</td>
+                        <td>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={s.active}
+                            aria-label={`${s.name} is ${s.active ? 'active' : 'inactive'}`}
+                            title={
+                              s.active
+                                ? 'Active. Switch off to deactivate'
+                                : 'Inactive. It can’t be switched back on from here'
+                            }
+                            className={`fm-switch ${s.active ? 'fm-on' : ''}`}
+                            disabled={!s.active || busyId === s.id}
+                            onClick={() => deactivate(s)}
+                          >
+                            <i />
+                          </button>
+                        </td>
+                        <td>
+                          <div className="fm-row-actions">
+                            <button
+                              type="button"
+                              aria-label={`Edit ${s.name}`}
+                              title="Edit"
+                              onClick={() => openEdit(s)}
+                            >
+                              <Icon name="edit" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          )}
         </div>
+      </div>
 
-        {loading ? (
-          <p className="loading-text">Loading your services…</p>
-        ) : services.length === 0 ? (
-          <div className="empty-state">You haven’t listed any services yet.</div>
-        ) : (
-          services.map((s) => (
-            <div className="card" key={s.id}>
-              <div className="card-row">
-                <div className="svc-main">
-                  {s.thumbnailUrl ? (
-                    <img className="svc-thumb" src={imageUrl(s.thumbnailUrl)} alt="" />
-                  ) : (
-                    <div className="svc-thumb empty">No thumbnail</div>
-                  )}
-                  <div>
-                    <h3>{s.name}</h3>
-                    <p className="card-meta">{s.category}</p>
-                    <p className="card-meta">{s.description}</p>
-                    {!s.active && <p className="card-meta">Inactive</p>}
+      {showForm && (
+        <Modal title={editing ? 'Edit service' : 'Add a new service'} onClose={closeForm}>
+          {formError && <div className="alert alert-error">{formError}</div>}
+          <form onSubmit={submit}>
+            <div className="field">
+              <label htmlFor="svc-name">Service name</label>
+              <input
+                id="svc-name"
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="svc-category">Category</label>
+              <input
+                id="svc-category"
+                required
+                placeholder="e.g. Electrician, Plumber, Cleaning"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="svc-description">Description</label>
+              <textarea
+                id="svc-description"
+                rows={3}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="svc-price">Price (Rs.)</label>
+              <input
+                id="svc-price"
+                type="number"
+                min="1"
+                step="0.01"
+                required
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+              />
+            </div>
+
+            <div className="field">
+              <label>Thumbnail (optional)</label>
+              <div className="thumb-field">
+                {preview ? (
+                  <div className="thumb-preview">
+                    <img src={preview} alt="Thumbnail preview" />
                   </div>
-                </div>
-                <div className="card-price">Rs. {Number(s.price).toLocaleString()}</div>
-              </div>
-              <div className="card-actions">
-                <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}>
-                  Edit
-                </button>
-                {s.active && (
-                  <button className="btn btn-danger btn-sm" onClick={() => remove(s.id)}>
-                    Deactivate
-                  </button>
+                ) : (
+                  <div className="thumb-preview empty">No image</div>
                 )}
+                <div className="thumb-side">
+                  <div className="thumb-buttons">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => fileInput.current?.click()}
+                    >
+                      {preview ? 'Change image' : 'Choose image'}
+                    </button>
+                    {preview && (
+                      <button type="button" className="btn btn-danger btn-sm" onClick={onRemoveThumb}>
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="thumb-hint">
+                    JPG, PNG or WebP. It is resized for you, and customers see it next to your
+                    service.
+                  </p>
+                </div>
+                <input
+                  ref={fileInput}
+                  className="thumb-hidden-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={onPickFile}
+                />
               </div>
             </div>
-          ))
-        )}
 
-        {showForm && (
-          <Modal title={editing ? 'Edit service' : 'Add a new service'} onClose={closeForm}>
-            {formError && <div className="alert alert-error">{formError}</div>}
-            <form onSubmit={submit}>
-              <div className="field">
-                <label htmlFor="svc-name">Service name</label>
-                <input
-                  id="svc-name"
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="svc-category">Category</label>
-                <input
-                  id="svc-category"
-                  required
-                  placeholder="e.g. Electrician, Plumber, Cleaning"
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="svc-description">Description</label>
-                <textarea
-                  id="svc-description"
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="svc-price">Price (Rs.)</label>
-                <input
-                  id="svc-price"
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  required
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                />
-              </div>
-
-              <div className="field">
-                <label>Thumbnail (optional)</label>
-                <div className="thumb-field">
-                  {preview ? (
-                    <div className="thumb-preview">
-                      <img src={preview} alt="Thumbnail preview" />
-                    </div>
-                  ) : (
-                    <div className="thumb-preview empty">No image</div>
-                  )}
-                  <div className="thumb-side">
-                    <div className="thumb-buttons">
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => fileInput.current?.click()}
-                      >
-                        {preview ? 'Change image' : 'Choose image'}
-                      </button>
-                      {preview && (
-                        <button type="button" className="btn btn-danger btn-sm" onClick={onRemoveThumb}>
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                    <p className="thumb-hint">
-                      JPG, PNG or WebP. It is resized for you, and customers see it next to your
-                      service.
-                    </p>
-                  </div>
-                  <input
-                    ref={fileInput}
-                    className="thumb-hidden-input"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={onPickFile}
-                  />
-                </div>
-              </div>
-
-              <div className="card-actions">
-                <button className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving…' : editing ? 'Save changes' : 'Add service'}
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={closeForm}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </Modal>
-        )}
+            <div className="card-actions">
+              <button className="btn btn-primary" disabled={submitting}>
+                {submitting ? 'Saving…' : editing ? 'Save changes' : 'Add service'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={closeForm}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </ProviderLayout>
   );
 }
